@@ -118,7 +118,7 @@ BOOL AboutDialog::OnInitDialog() {
       L"{\\fonttbl"
       L"{\\f0\\fnil\\fcharset0 Segoe UI;}"
       L"}"
-      L"\\fs24\\b " TAIGA_APP_NAME L"\\b0  " + StrToWstr(taiga::version().to_string()) + L"\\line\\fs18\\par "
+      L"\\fs24\\b " TAIGA_APP_NAME L"\\b0  " + StrToWstr(taiga::version().to_string() + " forked by vme") + L"\\line\\fs18\\par "
       L"\\b Author:\\b0\\line "
       L"erengy (Eren Okka)\\line\\par "
       L"\\b Contributors:\\b0\\line "
