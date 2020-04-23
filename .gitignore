@@ -10,3 +10,10 @@
 /project/vs*/*.sdf
 /project/vs*/*.suo
 /project/vs*/*.user
+deps/src/curl
+deps/src/discord-rpc
+deps/src/pugixml
+deps/src/random
+deps/src/rapidjson
+deps/src/utf8proc
+deps/src/zlib
