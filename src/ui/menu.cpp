@@ -126,6 +126,8 @@ void MenuList::UpdateAnime(const anime::Item* anime_item) {
       if (menu->items[i].type == win::kMenuItemSeparator) {
         // Clear items
         menu->items.resize(i + 1);
+        // Open anime page
+        menu->CreateItem(L"ViewAnimePage", L"View anime page");
         // Play episode
         if (anime_item->GetEpisodeCount() != 1) {
           menu->CreateItem(L"", L"Play episode", L"PlayEpisode");
@@ -154,6 +156,7 @@ void MenuList::UpdateAnime(const anime::Item* anime_item) {
             anime_item->GetAiringStatus() == anime::SeriesStatus::FinishedAiring) {
           menu->CreateItem(L"StartNewRewatch()", L"Start new rewatch");
         }
+        
         break;
       }
     }
