@@ -15,4 +15,6 @@ Visit our [home page](https://taiga.moe) for more information. See the [guidelin
 
 Taiga is licensed under [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html).
 
+## Yes
+
 Forked by vme.
