@@ -16,6 +16,7 @@
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "base/format.h"
 #include "base/gfx.h"
 #include "base/string.h"
 #include "media/anime_db.h"
@@ -48,6 +49,8 @@ enum SeasonToolbarCommand {
   kCommandSeasonView,
 };
 
+constexpr int kNotInListGroupIndex = 1000;
+
 SeasonDialog DlgSeason;
 
 SeasonDialog::SeasonDialog()
@@ -79,9 +82,9 @@ BOOL SeasonDialog::OnInitDialog() {
   BYTE fsStyle0 = BTNS_AUTOSIZE;
   BYTE fsStyle1 = BTNS_AUTOSIZE | BTNS_SHOWTEXT;
   BYTE fsStyle2 = BTNS_AUTOSIZE | BTNS_SHOWTEXT | BTNS_WHOLEDROPDOWN;
-  toolbar_.InsertButton(0, ui::kIcon16_Calendar, kCommandSelectSeason, fsState, fsStyle2, 0, L"Select season", L"Select season");
-  toolbar_.InsertButton(1, ui::kIcon16_CalendarPrev, kCommandPreviousSeason, fsState, fsStyle0, 1, nullptr, L"Previous season");
-  toolbar_.InsertButton(2, ui::kIcon16_CalendarNext, kCommandNextSeason, fsState, fsStyle0, 2, nullptr, L"Next season");
+  toolbar_.InsertButton(0, ui::kIcon16_CalendarPrev, kCommandPreviousSeason, fsState, fsStyle0, 0, nullptr, L"Previous season");
+  toolbar_.InsertButton(1, ui::kIcon16_CalendarNext, kCommandNextSeason, fsState, fsStyle0, 1, nullptr, L"Next season");
+  toolbar_.InsertButton(2, ui::kIcon16_Calendar, kCommandSelectSeason, fsState, fsStyle2, 2, L"Select season", L"Select season");
   toolbar_.InsertButton(3, 0, 0, 0, BTNS_SEP, 0, nullptr, nullptr);
   toolbar_.InsertButton(4, ui::kIcon16_Refresh, kCommandRefreshSeason, fsState, fsStyle1, 4, L"Refresh data", L"Download anime details and missing images");
   toolbar_.InsertButton(5, 0, 0, 0, BTNS_SEP, 0, nullptr, nullptr);
@@ -595,24 +598,40 @@ void SeasonDialog::RefreshList(bool redraw_only) {
   // Disable drawing
   list_.SetRedraw(FALSE);
 
+  struct ListGroup {
+    int item_count = 0;
+    std::wstring text;
+  };
+  std::map<int, ListGroup> groups;
+
   // Insert list groups
   list_.RemoveAllGroups();
   list_.EnableGroupView(true);  // Required for XP
   switch (taiga::settings.GetAppSeasonsGroupBy()) {
     case kSeasonGroupByAiringStatus:
       for (const auto status : anime::kSeriesStatuses) {
-        list_.InsertGroup(static_cast<int>(status), ui::TranslateStatus(status).c_str(), true, false);
+        ListGroup group{0, ui::TranslateStatus(status)};
+        groups[static_cast<int>(status)] = group;
+        list_.InsertGroup(static_cast<int>(status), group.text.c_str(), true, false);
       }
       break;
-    case kSeasonGroupByListStatus:
+    case kSeasonGroupByListStatus: {
       for (const auto status : anime::kMyStatuses) {
-        list_.InsertGroup(static_cast<int>(status), ui::TranslateMyStatus(status, false).c_str(), true, false);
+        ListGroup group{0, ui::TranslateMyStatus(status, false)};
+        groups[static_cast<int>(status)] = group;
+        list_.InsertGroup(static_cast<int>(status), group.text.c_str(), true, false);
       }
+      ListGroup group{0, ui::TranslateMyStatus(anime::MyStatus::NotInList, false)};
+      groups[kNotInListGroupIndex] = group;
+      list_.InsertGroup(kNotInListGroupIndex, group.text.c_str(), true, false);
       break;
+    }
     case kSeasonGroupByType:
     default:
       for (const auto type : anime::kSeriesTypes) {
-        list_.InsertGroup(static_cast<int>(type), ui::TranslateType(type).c_str(), true, false);
+        ListGroup group{0, ui::TranslateType(type)};
+        groups[static_cast<int>(type)] = group;
+        list_.InsertGroup(static_cast<int>(type), group.text.c_str(), true, false);
       }
       break;
   }
@@ -647,7 +666,10 @@ void SeasonDialog::RefreshList(bool redraw_only) {
         group = static_cast<int>(anime_item->GetAiringStatus());
         break;
       case kSeasonGroupByListStatus: {
-        group = static_cast<int>(anime_item->GetMyStatus());
+        const auto my_status = anime_item->GetMyStatus();
+        group = my_status == anime::MyStatus::NotInList
+                    ? kNotInListGroupIndex
+                    : static_cast<int>(my_status);
         break;
       }
       case kSeasonGroupByType:
@@ -655,6 +677,7 @@ void SeasonDialog::RefreshList(bool redraw_only) {
         group = static_cast<int>(anime_item->GetType());
         break;
     }
+    groups[group].item_count += 1;
     list_.InsertItem(i - anime::season_db.items.begin(),
                      group, -1, 0, nullptr, LPSTR_TEXTCALLBACK,
                      static_cast<LPARAM>(anime_item->GetId()));
@@ -687,6 +710,11 @@ void SeasonDialog::RefreshList(bool redraw_only) {
       break;
   }
 
+  // Update group headers
+  for (const auto& [index, group] : groups) {
+    list_.SetGroupText(index, L"{} ({})"_format(group.text, group.item_count).c_str());
+  }
+
   // Redraw
   list_.SetRedraw(TRUE);
   list_.RedrawWindow(nullptr, nullptr,
@@ -704,7 +732,7 @@ void SeasonDialog::RefreshStatus() {
 }
 
 void SeasonDialog::RefreshToolbar() {
-  toolbar_.SetButtonText(0, anime::season_db.current_season ?
+  toolbar_.SetButtonText(2, anime::season_db.current_season ?
       ui::TranslateSeason(anime::season_db.current_season).c_str() :
       L"Select season");
 

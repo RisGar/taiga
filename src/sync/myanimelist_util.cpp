@@ -67,7 +67,7 @@ anime::AgeRating TranslateAgeRatingFrom(const std::wstring& value) {
     {L"rx", anime::AgeRating::R18},
   };
 
-  const auto it = table.find(value);
+  const auto it = table.find(ToLower_Copy(value));
   if (it != table.end())
     return it->second;
 
@@ -77,40 +77,55 @@ anime::AgeRating TranslateAgeRatingFrom(const std::wstring& value) {
   return anime::AgeRating::Unknown;
 }
 
+Date TranslateDateFrom(const std::wstring& value) {
+  // YYYY-MM-DD
+  if (value.size() >= 10) {
+    return Date(value);
+  // YYYY-MM
+  } else if (value.size() == 7) {
+    return Date(L"{}-00"_format(value));
+  // YYYY
+  } else if (value.size() == 4) {
+    return Date(L"{}-00-00"_format(value));
+  } else {
+    return Date{};
+  }
+}
+
 int TranslateEpisodeLengthFrom(int value) {
   const auto seconds = std::chrono::seconds{value};
   return std::chrono::duration_cast<std::chrono::minutes>(seconds).count();
 }
 
 anime::SeriesStatus TranslateSeriesStatusFrom(const std::wstring& value) {
-  if (IsEqual(value, L"currently_airing")) {
-    return anime::SeriesStatus::Airing;
-  } else if (IsEqual(value, L"finished_airing")) {
-    return anime::SeriesStatus::FinishedAiring;
-  } else if (IsEqual(value, L"not_yet_aired")) {
-    return anime::SeriesStatus::NotYetAired;
-  }
+  static const std::map<std::wstring, anime::SeriesStatus> table{
+    {L"currently_airing", anime::SeriesStatus::Airing},
+    {L"finished_airing", anime::SeriesStatus::FinishedAiring},
+    {L"not_yet_aired", anime::SeriesStatus::NotYetAired},
+  };
+
+  const auto it = table.find(ToLower_Copy(value));
+  if (it != table.end())
+    return it->second;
 
   LOGW(L"Invalid value: {}", value);
   return anime::SeriesStatus::Unknown;
 }
 
 anime::SeriesType TranslateSeriesTypeFrom(const std::wstring& value) {
-  if (IsEqual(value, L"unknown")) {
-    return anime::SeriesType::Unknown;
-  } else if (IsEqual(value, L"tv")) {
-    return anime::SeriesType::Tv;
-  } else if (IsEqual(value, L"ova")) {
-    return anime::SeriesType::Ova;
-  } else if (IsEqual(value, L"movie")) {
-    return anime::SeriesType::Movie;
-  } else if (IsEqual(value, L"special")) {
-    return anime::SeriesType::Special;
-  } else if (IsEqual(value, L"ona")) {
-    return anime::SeriesType::Ona;
-  } else if (IsEqual(value, L"music")) {
-    return anime::SeriesType::Music;
-  }
+  static const std::map<std::wstring, anime::SeriesType> table{
+    {L"unknown", anime::SeriesType::Unknown},
+    {L"tv", anime::SeriesType::Tv},
+    {L"ova", anime::SeriesType::Ova},
+    {L"movie", anime::SeriesType::Movie},
+    {L"special", anime::SeriesType::Special},
+    {L"ona", anime::SeriesType::Ona},
+    {L"music", anime::SeriesType::Music},
+  };
+
+  const auto it = table.find(ToLower_Copy(value));
+  if (it != table.end())
+    return it->second;
 
   if (!value.empty())
     LOGW(L"Invalid value: {}", value);
@@ -155,17 +170,17 @@ int TranslateMyRatingTo(int value) {
 }
 
 anime::MyStatus TranslateMyStatusFrom(const std::wstring& value) {
-  if (IsEqual(value, L"watching")) {
-    return anime::MyStatus::Watching;
-  } else if (IsEqual(value, L"completed")) {
-    return anime::MyStatus::Completed;
-  } else if (IsEqual(value, L"on_hold")) {
-    return anime::MyStatus::OnHold;
-  } else if (IsEqual(value, L"dropped")) {
-    return anime::MyStatus::Dropped;
-  } else if (IsEqual(value, L"plan_to_watch")) {
-    return anime::MyStatus::PlanToWatch;
-  }
+  static const std::map<std::wstring, anime::MyStatus> table{
+    {L"watching", anime::MyStatus::Watching},
+    {L"completed", anime::MyStatus::Completed},
+    {L"on_hold", anime::MyStatus::OnHold},
+    {L"dropped", anime::MyStatus::Dropped},
+    {L"plan_to_watch", anime::MyStatus::PlanToWatch},
+  };
+
+  const auto it = table.find(ToLower_Copy(value));
+  if (it != table.end())
+    return it->second;
 
   LOGW(L"Invalid value: {}", value);
   return anime::MyStatus::NotInList;

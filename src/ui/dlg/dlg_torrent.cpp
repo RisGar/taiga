@@ -25,9 +25,9 @@
 #include "base/url.h"
 #include "media/anime_db.h"
 #include "media/anime_util.h"
+#include "taiga/app.h"
 #include "taiga/resource.h"
 #include "taiga/settings.h"
-#include "taiga/taiga.h"
 #include "track/episode_util.h"
 #include "track/feed_aggregator.h"
 #include "track/feed_filter_manager.h"
@@ -373,7 +373,7 @@ LRESULT TorrentDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
           case CDDS_ITEMPREPAINT | CDDS_SUBITEM: {
             const auto feed_item = reinterpret_cast<track::FeedItem*>(pCD->nmcd.lItemlParam);
             if (feed_item) {
-              if (Taiga.options.debug_mode) {
+              if (taiga::app.options.debug_mode) {
                 // Change background color
                 switch (feed_item->state) {
                   case track::FeedItemState::DiscardedNormal:
@@ -512,9 +512,12 @@ void TorrentDialog::Search(std::wstring url, int anime_id) {
     return;
 
   std::wstring title = anime_item->GetTitle();
-  if (anime_item->GetUseAlternative() &&
-      anime_item->UserSynonymsAvailable())
-    title = anime_item->GetUserSynonyms().front();
+  if (anime_item->GetUseAlternative()) {
+    const auto synonyms = anime_item->GetUserSynonyms();
+    if (!synonyms.empty()) {
+      title = synonyms.front();
+    }
+  }
 
   Search(url, title);
 }

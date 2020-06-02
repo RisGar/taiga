@@ -264,8 +264,10 @@ int ParseAnimeObject(const Json& json) {
   anime_item.SetLastModified(time(nullptr));  // current time
 
   anime_item.SetTitle(StrToWstr(JsonReadStr(json, "title")));
-  anime_item.SetDateStart(StrToWstr(JsonReadStr(json, "start_date")));
-  anime_item.SetDateEnd(StrToWstr(JsonReadStr(json, "end_date")));
+  anime_item.SetDateStart(
+      TranslateDateFrom(StrToWstr(JsonReadStr(json, "start_date"))));
+  anime_item.SetDateEnd(
+      TranslateDateFrom(StrToWstr(JsonReadStr(json, "end_date"))));
   anime_item.SetSynopsis(
       anime::NormalizeSynopsis(StrToWstr(JsonReadStr(json, "synopsis"))));
   anime_item.SetScore(JsonReadDouble(json, "mean"));
@@ -335,13 +337,24 @@ void ParseLibraryObject(const Json& json, const int anime_id) {
   anime_item.SetMyScore(TranslateMyRatingFrom(JsonReadInt(json, "score")));
   anime_item.SetMyLastWatchedEpisode(JsonReadInt(json, "num_episodes_watched"));
   anime_item.SetMyRewatching(JsonReadBool(json, "is_rewatching"));
-  anime_item.SetMyDateStart(StrToWstr(JsonReadStr(json, "start_date")));
-  anime_item.SetMyDateEnd(StrToWstr(JsonReadStr(json, "finish_date")));
+  anime_item.SetMyDateStart(
+      TranslateDateFrom(StrToWstr(JsonReadStr(json, "start_date"))));
+  anime_item.SetMyDateEnd(
+      TranslateDateFrom(StrToWstr(JsonReadStr(json, "finish_date"))));
   anime_item.SetMyRewatchedTimes(JsonReadInt(json, "num_times_rewatched"));
-  anime_item.SetMyTags(StrToWstr(JsonReadStr(json, "tags")));
   anime_item.SetMyNotes(StrToWstr(JsonReadStr(json, "comments")));
   anime_item.SetMyLastUpdated(
       TranslateMyLastUpdatedFrom(JsonReadStr(json, "updated_at")));
+
+  std::vector<std::wstring> tags;
+  if (json.contains("tags") && json["tags"].is_array()) {
+    for (const auto& tag : json["tags"]) {
+      if (tag.is_string()) {
+        tags.push_back(StrToWstr(tag.get<std::string>()));
+      }
+    }
+  }
+  anime_item.SetMyTags(Join(tags, L", "));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

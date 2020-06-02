@@ -30,9 +30,9 @@
 #include "media/library/queue.h"
 #include "sync/service.h"
 #include "taiga/announce.h"
+#include "taiga/app.h"
 #include "taiga/config.h"
 #include "taiga/settings.h"
-#include "taiga/taiga.h"
 #include "track/feed_aggregator.h"
 #include "track/monitor.h"
 #include "ui/dlg/dlg_anime_list.h"
@@ -593,7 +593,7 @@ void Settings::SetAppBehaviorAutostart(const bool enabled) {
                    L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
                    0, KEY_SET_VALUE);
   if (enabled) {
-    registry.SetValue(TAIGA_APP_NAME, Taiga.GetModulePath());
+    registry.SetValue(TAIGA_APP_NAME, app.GetModulePath());
   } else {
     registry.DeleteValue(TAIGA_APP_NAME);
   }
@@ -1422,6 +1422,54 @@ void Settings::SetAnimeListColumn(const std::wstring& key,
   const auto it = anime_list_columns_.find(key);
   if (it == anime_list_columns_.end() || it->second != column) {
     anime_list_columns_[key] = column;
+    modified_ = true;
+  }
+}
+
+std::wstring Settings::GetAnimeFolder(const int id) const {
+  std::lock_guard lock{mutex_};
+  const auto it = anime_settings_.find(id);
+  return it != anime_settings_.end() ? it->second.folder : std::wstring{};
+}
+
+void Settings::SetAnimeFolder(const int id, const std::wstring& folder) {
+  std::lock_guard lock{mutex_};
+  const auto it = anime_settings_.find(id);
+  if (it == anime_settings_.end() || it->second.folder != folder) {
+    anime_settings_[id].folder = folder;
+    modified_ = true;
+  }
+}
+
+bool Settings::GetAnimeUseAlternative(const int id) const {
+  std::lock_guard lock{mutex_};
+  const auto it = anime_settings_.find(id);
+  return it != anime_settings_.end() ? it->second.use_alternative : false;
+}
+
+void Settings::SetAnimeUseAlternative(const int id, const bool enabled) {
+  std::lock_guard lock{mutex_};
+  const auto it = anime_settings_.find(id);
+  if (it == anime_settings_.end() || it->second.use_alternative != enabled) {
+    anime_settings_[id].use_alternative = enabled;
+    modified_ = true;
+  }
+}
+
+std::vector<std::wstring> Settings::GetAnimeUserSynonyms(
+    const int id) const {
+  std::lock_guard lock{mutex_};
+  const auto it = anime_settings_.find(id);
+  return it != anime_settings_.end() ? it->second.synonyms
+                                     : std::vector<std::wstring>{};
+}
+
+void Settings::SetAnimeUserSynonyms(const int id,
+                                    const std::vector<std::wstring>& synonyms) {
+  std::lock_guard lock{mutex_};
+  const auto it = anime_settings_.find(id);
+  if (it == anime_settings_.end() || it->second.synonyms != synonyms) {
+    anime_settings_[id].synonyms = synonyms;
     modified_ = true;
   }
 }

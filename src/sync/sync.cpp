@@ -152,6 +152,10 @@ void Synchronize() {
     // Allow downloading lists without authentication
     } else if (IsUserAccountAvailable()) {
       switch (GetCurrentServiceId()) {
+        case ServiceId::MyAnimeList:
+          // MyAnimeList does not allow this, but we need to display an error
+          GetLibraryEntries();
+          break;
         case ServiceId::Kitsu:
           GetUser();
           break;
@@ -344,6 +348,7 @@ void OnError(const RequestType type) {
       ui::EnableDialogInput(ui::Dialog::Main, true);
       break;
     case RequestType::GetSeason:
+      ui::OnLibraryGetSeason();
       ui::EnableDialogInput(ui::Dialog::Seasons, true);
       break;
     case RequestType::AddLibraryEntry:
@@ -416,13 +421,13 @@ void OnResponse(const RequestType type) {
     case RequestType::AddLibraryEntry:
     case RequestType::DeleteLibraryEntry:
     case RequestType::UpdateLibraryEntry:
-      library::queue.updating = false;
       if (const auto queue_item = library::queue.GetCurrentItem()) {
         anime::db.UpdateItem(*queue_item);
         anime::db.SaveList();
         library::queue.Remove();
-        library::queue.Check(false);
       }
+      library::queue.updating = false;
+      library::queue.Check(false);
       break;
   }
 }
