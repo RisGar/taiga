@@ -51,31 +51,30 @@ bool IsValidId(int anime_id) {
 ////////////////////////////////////////////////////////////////////////////////
 
 SeriesStatus GetAiringStatus(const Item& item) {
-  auto assume_worst_case = [](Date date) {
-    if (!date.month()) date.set_month(12);
-    if (!date.day()) date.set_day(31);
-    return date;
-  };
-
-  const Date now = GetDateJapan();
-
-  if (!IsValidDate(item.GetDateStart()))
-    return SeriesStatus::NotYetAired;
-  const Date start = assume_worst_case(item.GetDateStart());
-  if (now < start)
-    return SeriesStatus::NotYetAired;
-
-  // We don't need to check the end date for single-episode anime
-  if (item.GetEpisodeCount() == 1)
+  // We can trust the active service when it says something happened in the past
+  // (but not the opposite, because the information might be stale).
+  // This is the most common case, and it also handles the rare case where an
+  // anime has finished airing but the dates are completely unknown.
+  if (item.GetAiringStatus(false) == SeriesStatus::FinishedAiring)
     return SeriesStatus::FinishedAiring;
 
-  if (!IsValidDate(item.GetDateEnd()))
-    return SeriesStatus::Airing;
-  const Date end = assume_worst_case(item.GetDateEnd());
-  if (now <= end)
+  const auto& date_start = item.GetDateStart();
+  const auto& date_end = item.GetDateEnd();
+
+  // It is now safe to assume that an anime with unknown dates has not yet
+  // aired, considering we have covered the rare case mentioned above.
+  if (date_start.empty() && date_end.empty())
+    return SeriesStatus::NotYetAired;
+
+  const Date today = GetDateJapan();
+
+  if (!date_end.empty() && date_end < today)
+    return SeriesStatus::FinishedAiring;
+
+  if (!date_start.empty() && date_start <= today)
     return SeriesStatus::Airing;
 
-  return SeriesStatus::FinishedAiring;
+  return SeriesStatus::NotYetAired;
 }
 
 bool IsAiredYet(const Item& item) {
@@ -95,13 +94,7 @@ bool IsAiredYet(const Item& item) {
 }
 
 bool IsFinishedAiring(const Item& item) {
-  if (item.GetAiringStatus(false) == SeriesStatus::FinishedAiring)
-    return true;
-
-  if (GetAiringStatus(item) == SeriesStatus::FinishedAiring)
-    return true;
-
-  return false;
+  return item.GetAiringStatus() == SeriesStatus::FinishedAiring;
 }
 
 int EstimateDuration(const Item& item) {

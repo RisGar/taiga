@@ -261,6 +261,7 @@ void UseSparseFieldsetsForAnime(hypr::Params& params, bool minimal) {
       "posterImage,"
       "slug,"
       "startDate,"
+      "status,"
       "subtype,"
       "titles,"
       // relationships
@@ -328,6 +329,8 @@ int ParseAnimeObject(const Json& json) {
       StrToWstr(JsonReadStr(attributes["posterImage"], "small")));
   anime_item.SetSlug(StrToWstr(JsonReadStr(attributes, "slug")));
   anime_item.SetDateStart(StrToWstr(JsonReadStr(attributes, "startDate")));
+  anime_item.SetAiringStatus(
+      TranslateSeriesStatusFrom(JsonReadStr(attributes, "status")));
   anime_item.SetType(
       TranslateSeriesTypeFrom(JsonReadStr(attributes, "subtype")));
   anime_item.SetSynopsis(
@@ -632,13 +635,15 @@ void GetUser() {
 
     const auto& user = root["data"].front();
 
-    account.set_authenticated(true);
-    account.set_id(JsonReadStr(user, "id"));
-
-    Account::set_username(JsonReadStr(user["attributes"], "slug"));
+    // Email should be set first, because our settings handler can reset other
+    // fields if the new address is different than the current one.
+    // Also note that `email` and `ratingSystem` values are only available for
+    // logged in users.
+    Account::set_email(JsonReadStr(user["attributes"], "email"));
     Account::set_rating_system(JsonReadStr(user["attributes"], "ratingSystem"));
     Account::set_display_name(JsonReadStr(user["attributes"], "name"));
-    Account::set_email(JsonReadStr(user["attributes"], "email"));
+    Account::set_username(JsonReadStr(user["attributes"], "slug"));
+    account.set_id(JsonReadStr(user, "id"));
 
     sync::OnResponse(RequestType::GetUser);
 
@@ -656,6 +661,14 @@ void GetLibraryEntries(const int page) {
   if (account.id().empty()) {
     ui::ChangeStatusText(
         L"Kitsu: Cannot get anime list. User ID is unavailable.");
+    sync::OnError(RequestType::GetLibraryEntries);
+    return;
+  }
+  if (Account::username().empty()) {
+    ui::ChangeStatusText(
+        L"Kitsu: Cannot get anime list. "
+        L"Please set the profile URL for your account.");
+    sync::OnError(RequestType::GetLibraryEntries);
     return;
   }
 

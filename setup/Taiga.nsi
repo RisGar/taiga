@@ -6,7 +6,7 @@
 
 ; Configuration
 !define CONFIG_PATH "..\src\taiga\config.h"
-!searchparse /file "${CONFIG_PATH}" `#define TAIGA_APP_MUTEX ` PRODUCT_MUTEX
+!searchparse /file "${CONFIG_PATH}" `#define TAIGA_APP_MUTEX L"` PRODUCT_MUTEX `"`
 !searchparse /file "${CONFIG_PATH}" `#define TAIGA_VERSION_MAJOR ` VERSION_MAJOR
 !searchparse /file "${CONFIG_PATH}" `#define TAIGA_VERSION_MINOR ` VERSION_MINOR
 !searchparse /file "${CONFIG_PATH}" `#define TAIGA_VERSION_PATCH ` VERSION_PATCH
@@ -36,6 +36,7 @@ BrandingText "${PRODUCT_NAME} v${PRODUCT_VERSION}"
 Name "${PRODUCT_NAME}"
 OutFile "..\bin\${PRODUCT_NAME}Setup.exe"
 SetCompressor /SOLID lzma
+Unicode true
 
 ; Default installation folder
 !define DEFAULT_INSTALL_DIR "$APPDATA\${PRODUCT_NAME}"
